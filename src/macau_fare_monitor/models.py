@@ -67,7 +67,14 @@ class FareRow:
     market_low_2p: Optional[int] = None
     collected_on: Optional[date] = None
     note: str = ""
+    # 시장최저가 '참고가'(예: 우리 항공편 미운항으로 다른 편 가격)라 우리 상품과
+    # 동급 비교가 불가능한 경우 True. 승패 판정에서 제외하기 위함.
+    reference_only: bool = False
 
     @property
     def weekday_kr(self) -> str:
         return _WEEKDAY_KR[self.depart_date.weekday()]
+
+    @property
+    def comparable(self) -> bool:
+        return not self.reference_only

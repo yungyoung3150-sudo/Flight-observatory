@@ -69,7 +69,32 @@ gap = 시장최저(2인) - 우리요금(2인)
 
 ---
 
-## 3. 프로젝트 구조
+## 3. 정확도 개선 (v2 — 적용 완료)
+
+v1은 시트를 **그대로 재현**(이진 OK/실패)한다. 하지만 그 비교에는 정확도 한계가 있어 v2 계층을 추가했다.
+**v1 결과는 그대로 보존**(시트 일치 보증)하고, v2는 같은 데이터를 더 정확하게 해석한다.
+
+### 무엇이 부정확했나 → 무엇을 고쳤나
+
+| # | 약점 | v2 개선 | 모듈 |
+| - | :-- | :-- | :-- |
+| 1 | **사과 vs 오렌지** — '시장최저'가 우리 항공편과 무관한 더 싼 편일 수 있음. 참고가(미운항)도 동급 취급 | 비교가능(comparable) 견적만으로 benchmark, 참고가는 `NON_COMPARABLE` 로 승패 제외 | `benchmark.py`, `verdict.py` |
+| 2 | **2인가 = 1인최저 × 2 근사** — 실제 2석 발권가와 차이 → 거짓 실패 | 근사 여부(`approx_2p`)를 추적·명시 | `benchmark.py` |
+| 3 | **단일 최저값의 취약성** — 글리치 1건이 benchmark 왜곡 | 2번째 최저 대비 **이상치 가드**(설정 비율↑면 2번째 채택) | `benchmark.py` |
+| 4 | **이진 판정** — 근소차/과도하게 쌈 구분 못 함 | 🟦과방어/✅우위/🟨동률/🔴열위 **4단계 마진 판정** | `verdict.py`, `config.py` |
+| 5 | **데이터 무검증** — 오래된/이상/누락 데이터를 그대로 신뢰 | STALE·SPIKE(고립 이상치)·NO_MARKET·REFERENCE_ONLY **자동 점검** | `validate.py` |
+
+### 적용 효과(실데이터)
+
+- **숨은 거짓 성공 적발**: v1에서 에어마카오 2박3일 "성공 19"였으나, 그중 **8건(7/10~7/17)은 우리 항공편 NX825 미운항 = 참고가**였다. v2는 이를 `비교불가`로 분리 → 실제 판정은 ✅우위 9 / 🟦과방어 2.
+- **과방어 발견**: 시장보다 15만원 이상 싸게 판 구간을 `과방어`로 표시 → 가격 인상으로 회수 가능한 마진을 수치화(3박4일 과방어 여유분 합계 약 229만원).
+- **데이터 건전성**: 전체가 06-19 단일 수집(2일 경과 STALE), 고립 이상치 1건(3박4일 7/13) 자동 검출. 성수기 연속 급등은 **오탐 없이** 통과.
+
+> 핵심: v2는 **부정확한 입력을 그대로 신뢰하지 않는다.** "방어 성공/실패"라는 단정 대신, 비교 가능성과 데이터 신뢰도를 함께 보고한다.
+
+---
+
+## 4. 프로젝트 구조
 
 ```
 macau-fare-monitor/
@@ -79,41 +104,54 @@ macau-fare-monitor/
 │   ├── fares.csv                  # 시트에서 추출한 원시 데이터(상품×날짜)
 │   └── collection_log.csv         # 수집 로그 샘플(신선도 점검용)
 ├── src/macau_fare_monitor/
-│   ├── models.py                  # Product / FareRow 등 도메인 모델
-│   ├── defense.py                 # ★ 방어 판정 로직(시트 '방어' 열)
-│   ├── staleness.py               # 수집 신선도 경보 로직
-│   ├── loader.py                  # CSV → 도메인 객체
-│   └── report.py                  # 방어 시트/요약 리포트 생성
+│   ├── models.py                  # Product / FareRow(+comparable) 도메인 모델
+│   ├── config.py                  # 판정·검증 임계치(조정 가능)
+│   ├── defense.py                 # v1: 방어 판정(시트 '방어' 열 재현)
+│   ├── verdict.py                 # ★ v2: 마진 인지 4단계 판정
+│   ├── benchmark.py               # ★ v2: 다중 견적 → 견고한 benchmark(이상치 가드)
+│   ├── validate.py                # ★ v2: 데이터 건전성 점검(STALE/SPIKE 등)
+│   ├── analysis.py                # 행 → benchmark → 판정 글루
+│   ├── staleness.py               # 수집 신선도 로직
+│   ├── loader.py                  # CSV → 도메인 객체(참고가 표식 파싱)
+│   └── report.py                  # v1+v2 요약·상세·건전성 리포트
 ├── scripts/
 │   └── build_report.py            # CLI: 데이터 → 리포트
 └── tests/
-    ├── test_defense.py            # 방어·신선도 로직 단위 테스트
+    ├── test_defense.py            # v1 방어·신선도 로직
+    ├── test_verdict.py            # v2 마진 판정
+    ├── test_benchmark.py          # v2 benchmark/이상치 가드
+    ├── test_validate.py           # v2 데이터 건전성/SPIKE
     └── test_data_integrity.py     # 데이터 정합성(134일 연속 등)
 ```
 
 ---
 
-## 4. 실행 방법 (설치 불필요, Python 3.9+)
+## 5. 실행 방법 (설치 불필요, Python 3.9+)
 
 ```bash
-# 1) 테스트 — 13개 통과
+# 1) 테스트 — 32개 통과
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 
-# 2) 리포트 생성 — 콘솔 요약 + reports/ 에 마크다운/CSV 저장
-python3 scripts/build_report.py --out reports
+# 2) 리포트 생성(v1+v2+건전성) — 콘솔 요약 + reports/ 에 마크다운/CSV 저장
+python3 scripts/build_report.py --as-of 2026-06-21 --out reports
 ```
 
 라이브러리로 직접 사용:
 
 ```python
-from macau_fare_monitor import evaluate
-r = evaluate(our_price_2p=956000, market_low_2p=926668)
-print(r.label)   # "🔴 방어실패 -29,332"
+from macau_fare_monitor import evaluate, classify
+
+# v1 (시트 재현)
+evaluate(956000, 926668).label    # "🔴 방어실패 -29,332"
+
+# v2 (마진 인지 판정)
+classify(900000, 1000000).label   # "✅ 우위 +100,000"
+classify(850000, 1050000).label   # "🟦 과방어 +200,000"  (가격 인상 검토)
 ```
 
 ---
 
-## 5. GitHub 올리기
+## 6. GitHub 올리기
 
 이 폴더는 그 자체로 독립 저장소로 만들 수 있다.
 
@@ -129,9 +167,11 @@ git push -u origin main
 
 ---
 
-## 6. 범위 / 후속 과제
+## 7. 범위 / 후속 과제
 
-- **포함**: 방어 판정·신선도·리포트(모델/계산 계층) + 시트 데이터 정본화.
+- **포함**: v1 방어 재현 + v2 마진 판정·견고한 benchmark·데이터 건전성(모델/계산 계층).
 - **미포함**: 실시간 가격 수집(정식 API 연동), 시트 자동 동기화, 알림 발송.
-- **TODO**: ① 에어부산 시장최저 수집 연결 → `NO_MARKET` 해소, ② `항공_최저가`/`출발일`
-  스냅샷 정본 단일화, ③ 가격 수집기(Amadeus/Duffel)와 `loader` 연결.
+- **TODO**: ① 가격 수집기(Amadeus/Duffel)에서 `(date, product)` 당 **여러 견적**을
+  `MarketQuote` 로 공급 → benchmark 이상치 가드/비교가능 필터가 본격 작동, ② 에어부산
+  시장최저 수집 연결 → `NO_MARKET` 해소, ③ 견적에 운항편/수하물 등 메타 추가로 `comparable`
+  자동 판정 정교화, ④ 다중 스냅샷 누적 → 추세·가격 변동 알림.

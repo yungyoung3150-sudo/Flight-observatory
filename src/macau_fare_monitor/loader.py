@@ -28,12 +28,21 @@ def _parse_date(value: str) -> date:
     return datetime.strptime(value.strip(), "%Y-%m-%d").date()
 
 
+# 시장최저가 '참고가/비교불가'임을 나타내는 비고 표식.
+_REFERENCE_MARKERS = ("참고가", "미운항")
+
+
+def _is_reference_only(note: str) -> bool:
+    return any(m in note for m in _REFERENCE_MARKERS)
+
+
 def load_fares(path: Path = DEFAULT_FARES_CSV,
                collected_on: date = DEFAULT_COLLECTED_ON) -> List[FareRow]:
     """fares.csv 를 FareRow 리스트로 로드한다."""
     rows: List[FareRow] = []
     with open(path, newline="", encoding="utf-8") as fh:
         for raw in csv.DictReader(fh):
+            note = (raw.get("note") or "").strip()
             rows.append(
                 FareRow(
                     product=Product(raw["product"].strip()),
@@ -41,7 +50,8 @@ def load_fares(path: Path = DEFAULT_FARES_CSV,
                     our_price_2p=_parse_int(raw.get("our_price_2p")),
                     market_low_2p=_parse_int(raw.get("market_low_2p")),
                     collected_on=collected_on,
-                    note=(raw.get("note") or "").strip(),
+                    note=note,
+                    reference_only=_is_reference_only(note),
                 )
             )
     return rows
