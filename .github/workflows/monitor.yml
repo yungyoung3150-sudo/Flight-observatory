@@ -1,0 +1,34 @@
+name: Monitor (scheduled scaffold)
+
+# ⚠️ 현재는 '스캐폴드'다. 고정 스냅샷(data/fares.csv)을 읽으므로 매일 같은 리포트가 나온다.
+# 진짜 백그라운드 감시가 되려면 아래 'Collect' 단계에서 가격 수집 파이프
+# (Amadeus/Duffel + 소비자 OTA 채널가)로 data/fares.csv 를 갱신해야 한다. (README §7)
+# 🔴 경보가 뜨면 알림(Pushover 등)을 붙이는 것도 그다음 단계.
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # 매일 00:00 UTC = 09:00 KST
+  workflow_dispatch:       # 수동 실행 버튼
+
+jobs:
+  guardrail:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # TODO(데이터 피드): 여기서 실시간 시세를 수집해 data/fares.csv 를 갱신.
+      #   - name: Collect live fares
+      #     env: { AMADEUS_KEY: ${{ secrets.AMADEUS_KEY }} }
+      #     run: python scripts/collect.py --out data/fares.csv
+
+      - name: Build guardrail report
+        run: python scripts/build_report.py --out reports   # --as-of 기본값 = 실행일(오늘)
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: guardrail-report-${{ github.run_id }}
+          path: reports/

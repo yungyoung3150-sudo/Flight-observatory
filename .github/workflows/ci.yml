@@ -1,0 +1,26 @@
+name: CI
+
+# 코드가 바뀔 때마다 자동으로 테스트 + 리포트 생성(회귀 방지).
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Unit tests (39)
+        run: PYTHONPATH=src python -m unittest discover -s tests -v
+      - name: Smoke — build report
+        run: python scripts/build_report.py --as-of 2026-06-21 --out reports
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: guardrail-report-ci
+          path: reports/
