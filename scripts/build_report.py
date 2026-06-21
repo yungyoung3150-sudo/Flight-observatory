@@ -65,9 +65,9 @@ def main() -> int:
     config = DEFAULT_CONFIG
     print(f"로드: {len(rows)}행  (데이터: {args.data})  기준일: {args.as_of}")
     print(f"임계: 🔴경보 ≥ 인당 {config.alarm_min_surcharge_pp:,} · "
-          f"🟡주의 인당 {config.safe_max_surcharge_pp:,}~{config.alarm_min_surcharge_pp:,}\n")
+          f"🟠주의 인당 {config.watch_min_surcharge_pp:,}~{config.alarm_min_surcharge_pp:,}\n")
 
-    print("[컴플레인 가드레일]  🔴경보 / 🟡주의 / 🟢안전")
+    print("[컴플레인 가드레일]  🔴경보 / 🟠주의 / 🟢안전")
     for product, s in summarize_alerts(rows, config).items():
         flags = []
         if s.no_market:
@@ -76,7 +76,7 @@ def main() -> int:
             flags.append(f"◻비교불가 {s.non_comparable}")
         extra = ("  | " + " ".join(flags)) if flags else ""
         print(
-            f"- {product.korean:<14} 🔴{s.alarm:>2} 🟡{s.watch:>2} 🟢{s.safe:>2} "
+            f"- {product.korean:<14} 🔴{s.alarm:>2} 🟠{s.watch:>2} 🟢{s.safe:>2} "
             f"| 최대초과 인당 {s.worst_surcharge_pp:>8,}{extra}"
         )
 

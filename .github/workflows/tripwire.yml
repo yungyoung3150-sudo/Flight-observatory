@@ -1,0 +1,38 @@
+name: Tripwire (클라우드, 하루 2회)
+
+# 1순위 = GitHub 백그라운드. 트랙 A(메타서치 소비자가 API)는 스크래핑이 아니라 API 호출이라
+# 클라우드에서 완전 자동 실행 가능. 하루 2회 수집→판정→🔴/🟠면 아이폰(Pushover) 경보.
+# (트랙 B 네이버 사람판독은 폰/로컬 — 클라우드에선 트랙 A만.)
+#
+# 활성화에 필요한 Repo Secrets (Settings → Secrets and variables → Actions):
+#   TRAVELPAYOUTS_TOKEN, PUSHOVER_TOKEN, PUSHOVER_USER
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # 00:00 UTC = 09:00 KST (오전)
+    - cron: '0 9 * * *'   # 09:00 UTC = 18:00 KST (오후)
+  workflow_dispatch:
+
+jobs:
+  tripwire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 클라우드에선 트랙 A(자동)만 판정 → 커밋된 데모/사람판독 행 제거(빈 싱크로 시작)
+      - name: Reset consumer prices (Track A only)
+        run: printf 'sku_id,depart_date,source,consumer_pp,observed_at,note\n' > tripwire/consumer_prices.csv
+
+      - name: Collect — Track A (Travelpayouts 소비자가)
+        env:
+          TRAVELPAYOUTS_TOKEN: ${{ secrets.TRAVELPAYOUTS_TOKEN }}
+        run: python tripwire/meta_source.py || echo "(meta_source 스킵 — 토큰 미설정 가능)"
+
+      - name: Evaluate + 아이폰 경보(Pushover)
+        env:
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+        run: python tripwire/evaluate_tripwire.py

@@ -1,7 +1,7 @@
 """리포트 생성.
 
 리포트는 **1차 목적(컴플레인 가드레일)** 을 맨 위에 둔다:
-  1) 🔴 경보 / 🟡 주의 헤드라인  — 우리가 고객 분노 임계만큼 더 비싼 출발일
+  1) 🔴 경보 / 🟠 주의 헤드라인  — 우리가 고객 분노 임계만큼 더 비싼 출발일
   2) 수동확인 큐               — 시장최저 미수집(예: 에어부산) → '안전' 아님
   3) 상품별 요약              — 경보/주의/안전/비교불가/미수집 분포
   4) (보조) 가격 인상 검토 후보 — 우리가 과하게 싼 구간(마진)
@@ -124,7 +124,7 @@ def alert_headline_md(rows: List[FareRow], config: DefenseConfig = DEFAULT_CONFI
         "## 🚨 컴플레인 가드레일",
         "",
         f"기준: 🔴경보 ≥ 인당 {config.alarm_min_surcharge_pp:,} · "
-        f"🟡주의 인당 {config.safe_max_surcharge_pp:,}~{config.alarm_min_surcharge_pp:,} "
+        f"🟠주의 인당 {config.watch_min_surcharge_pp:,}~{config.alarm_min_surcharge_pp:,} "
         f"(우리가 시장보다 더 비싼 초과액)",
         "",
     ]
@@ -146,7 +146,7 @@ def alert_headline_md(rows: List[FareRow], config: DefenseConfig = DEFAULT_CONFI
     lines.append("")
     if watches:
         worst = watches[0][1].surcharge_pp
-        lines.append(f"### 🟡 주의 {len(watches)}건 — 침묵 경보(사람이 점검, 판매결정 보류)")
+        lines.append(f"### 🟠 주의 {len(watches)}건 — 침묵 경보(사람이 점검, 판매결정 보류)")
         lines.append(f"가장 큰 초과액: 인당 +{worst:,} "
                      f"({watches[0][0].product.korean} {watches[0][0].depart_date:%m/%d})")
     return "\n".join(lines)
@@ -171,7 +171,7 @@ def alert_summary_md(summaries: Dict[Product, AlertSummary]) -> str:
     lines = [
         "## 상품별 경보 요약",
         "",
-        "| 상품 | 🔴경보 | 🟡주의 | 🟢안전 | 비교불가 | 시장미수집 | 미입력 | 최대초과(인당) | 인상검토 |",
+        "| 상품 | 🔴경보 | 🟠주의 | 🟢안전 | 비교불가 | 시장미수집 | 미입력 | 최대초과(인당) | 인상검토 |",
         "| :-- | --: | --: | --: | --: | --: | --: | --: | --: |",
     ]
     for product in Product:

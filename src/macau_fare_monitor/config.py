@@ -16,11 +16,11 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class DefenseConfig:
     # --- 가드레일: 우리가 시장보다 '인당' 얼마나 더 비싼가(초과액, KRW/인) ---
-    # 이 값 이하면 안전(SAFE): 더 싸거나, 살짝 비싸도 고객이 용인하는 구간(인당 ~2만).
-    safe_max_surcharge_pp: int = 20_000
-    # 이 값 이상이면 경보(ALARM): 고객 컴플레인 위험(인당 10만+).
+    # 5만원 미만 = 안전(SAFE, 🟢): 고객이 거의 신경 안 씀.
+    # 5만원 이상 = 주의(WATCH, 🟠): 고객에게 이슈가 될 수 있는 구간.
+    watch_min_surcharge_pp: int = 50_000
+    # 10만원 이상 = 경보(ALARM, 🔴): 컴플레인까지 들어오는 구간.
     alarm_min_surcharge_pp: int = 100_000
-    # 그 사이(2만~10만/인)는 주의(WATCH): 침묵 경보, 사람이 점검.
 
     # 우리가 시장보다 '인당' 이만큼 이상 더 싸면 → 마진 손실 가능(가격 인상 검토 후보).
     # 경보가 아니라 정보(INFO). 가드레일과 마진 최적화는 별개 우선순위.

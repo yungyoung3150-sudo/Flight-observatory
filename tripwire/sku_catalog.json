@@ -1,7 +1,8 @@
 {
   "_doc": "감시 SKU 카탈로그. 타깃 = '모든 결제 수단' 소비자 최저가. 두 소스(메타서치 API / 네이버 사람판독)가 이 SKU 정의로 동작.",
-  "anger_threshold_pp": 100000,
-  "tolerance_pp": 20000,
+  "alarm_min_pp": 100000,
+  "watch_min_pp": 50000,
+  "_threshold_doc": "초과액(인당): <5만 🟢안전 / 5만~10만 🟠주의(이슈) / ≥10만 🔴경보(컴플레인)",
   "_verify": "★our_price_pp(우리 공구가 인당)·depart_dates 는 placeholder — 실제 공구 SKU로 교체. ★BX 박수→귀국 오프셋(2박4일=+3,3박5일=+4)은 메모리값, 실일정으로 1회 검증.",
   "skus": [
     {

@@ -12,18 +12,14 @@ submit_price.py(또는 회수 폼)로 숫자 1개 제출 → consumer_prices.csv
 from __future__ import annotations
 
 import argparse
-import os
 import sys
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
+import pushover  # noqa: E402
 from naver_deeplink import build_checklist, load_catalog  # noqa: E402
-
-PUSHOVER_API = "https://api.pushover.net/1/messages.json"
 
 
 def format_message(items) -> str:
@@ -38,17 +34,6 @@ def format_message(items) -> str:
     return "\n".join(lines)
 
 
-def send_pushover(message: str, token: str, user: str, title: str) -> None:
-    data = urllib.parse.urlencode({
-        "token": token, "user": user, "title": title,
-        "message": message, "priority": "0",
-    }).encode()
-    req = urllib.request.Request(PUSHOVER_API, data=data)
-    with urllib.request.urlopen(req, timeout=20) as resp:
-        if resp.status != 200:
-            raise RuntimeError(f"Pushover {resp.status}")
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="네이버 딥링크 체크리스트 푸시")
     parser.add_argument("--catalog", type=Path, default=ROOT / "sku_catalog.json")
@@ -59,15 +44,13 @@ def main() -> int:
     items = build_checklist(load_catalog(args.catalog))
     message = format_message(items)
 
-    token = os.environ.get("PUSHOVER_TOKEN")
-    user = os.environ.get("PUSHOVER_USER")
-    if args.dry_run or not (token and user):
+    if args.dry_run or not pushover.configured():
         if not args.dry_run:
             print("(PUSHOVER_TOKEN/PUSHOVER_USER 없음 → dry-run 출력)\n", file=sys.stderr)
         print(message)
         return 0
 
-    send_pushover(message, token, user, args.title)
+    pushover.send(message, args.title, priority=0)
     print(f"[notify] Pushover 발송 완료 — SKU×출발일 {len(items)}건")
     return 0
 

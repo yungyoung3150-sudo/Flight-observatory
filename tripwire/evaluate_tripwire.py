@@ -24,6 +24,9 @@ sys.path.insert(0, str(REPO / "src"))
 from macau_fare_monitor.alert import AlertLevel, classify  # noqa: E402
 from macau_fare_monitor.config import DefenseConfig  # noqa: E402
 
+sys.path.insert(0, str(ROOT))
+import pushover  # noqa: E402
+
 CATALOG = ROOT / "sku_catalog.json"
 PRICES = ROOT / "consumer_prices.csv"
 
@@ -72,16 +75,39 @@ def evaluate(catalog: dict, prices: List[dict], config: DefenseConfig):
     return results
 
 
+def push_iphone(results) -> None:
+    """🔴경보/🟠주의가 있으면 아이폰(Pushover)으로 발송. 경보=긴급(priority 1)."""
+    alarms = [r for r in results if r["level"] is AlertLevel.ALARM]
+    watches = [r for r in results if r["level"] is AlertLevel.WATCH]
+    if not (alarms or watches):
+        return
+    if not pushover.configured():
+        print("  (Pushover 미설정 → 아이폰 발송 생략. PUSHOVER_TOKEN/USER 설정 시 발송)")
+        return
+    lines = []
+    for r in alarms:
+        lines.append(f"🔴 {r['carrier']} {r['stay']} {r['depart']}: "
+                     f"소비자가 인당 {r['surcharge_pp']:,} 더 쌈 ({r['source']})")
+    for r in watches:
+        lines.append(f"🟠 {r['carrier']} {r['stay']} {r['depart']}: 인당 {r['surcharge_pp']:,}")
+    lines.append("\n→ 네이버에서 확인 후 그 출발일 판매 보류/가격조정")
+    priority = 1 if alarms else 0   # 경보=긴급(소리·방해금지 무시), 주의=일반
+    title = "🔴 마카오 항공 경보(컴플레인 위험)" if alarms else "🟠 마카오 항공 주의"
+    ok = pushover.send("\n".join(lines), title, priority)
+    print(f"  아이폰 발송: {'완료' if ok else '실패'} (경보 {len(alarms)} / 주의 {len(watches)})")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="소비자가 트립와이어 판정")
     parser.add_argument("--catalog", type=Path, default=CATALOG)
     parser.add_argument("--prices", type=Path, default=PRICES)
+    parser.add_argument("--no-push", action="store_true", help="아이폰 발송 끔(로컬 점검용)")
     args = parser.parse_args()
 
     catalog = load_catalog(args.catalog)
     config = DefenseConfig(
-        safe_max_surcharge_pp=catalog.get("tolerance_pp", 20000),
-        alarm_min_surcharge_pp=catalog.get("anger_threshold_pp", 100000),
+        watch_min_surcharge_pp=catalog.get("watch_min_pp", 50000),
+        alarm_min_surcharge_pp=catalog.get("alarm_min_pp", 100000),
     )
     results = evaluate(catalog, read_prices(args.prices), config)
 
@@ -100,6 +126,9 @@ def main() -> int:
         for r in alarms:
             print(f"  · {r['carrier']} {r['stay']} {r['depart']}: "
                   f"소비자가 우리보다 인당 {r['surcharge_pp']:,} 더 쌈 ({r['source']})")
+
+    if not args.no_push:
+        push_iphone(results)
     return 0
 
 

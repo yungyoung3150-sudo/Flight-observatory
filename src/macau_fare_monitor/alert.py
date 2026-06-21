@@ -10,9 +10,9 @@
 
     초과액(인당) = (우리요금_2인 - 시장최저_2인) / pax   (양수 = 우리가 더 비쌈)
 
-    초과액 ≤ safe_max_surcharge_pp           → 🟢 SAFE   (안전, 무알림)
-    safe_max < 초과액 < alarm_min            → 🟡 WATCH  (주의, 사람이 점검)
-    초과액 ≥ alarm_min_surcharge_pp          → 🔴 ALARM  (경보, 컴플레인 위험 → 즉시 대응)
+    초과액 < 50,000(watch_min)              → 🟢 SAFE   (안전, 무알림)
+    50,000 ≤ 초과액 < 100,000               → 🟠 WATCH  (주의, 고객 이슈 가능 → 점검)
+    초과액 ≥ 100,000(alarm_min)             → 🔴 ALARM  (경보, 컴플레인 → 즉시 대응)
 
 판정 전 **건전성 게이트**가 우선한다:
     우리요금 없음 → NO_OUR_PRICE (아직 미가격)
@@ -69,7 +69,7 @@ class AlertResult:
         if self.level is AlertLevel.NON_COMPARABLE:
             return "◻ 비교불가(참고가)"
         icon = {AlertLevel.SAFE: "🟢 안전",
-                AlertLevel.WATCH: "🟡 주의",
+                AlertLevel.WATCH: "🟠 주의",
                 AlertLevel.ALARM: "🔴 경보"}[self.level]
         text = f"{icon} (인당 {self.surcharge_pp:+,})"
         if self.dumping_suspect:
@@ -103,7 +103,7 @@ def classify(our_2p: Optional[int],
     margin_review = surcharge_pp <= -config.margin_review_pp
     if surcharge_pp >= config.alarm_min_surcharge_pp:
         level = AlertLevel.ALARM
-    elif surcharge_pp > config.safe_max_surcharge_pp:
+    elif surcharge_pp >= config.watch_min_surcharge_pp:
         level = AlertLevel.WATCH
     else:
         level = AlertLevel.SAFE

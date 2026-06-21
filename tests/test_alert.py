@@ -1,6 +1,6 @@
 """컴플레인 가드레일(비대칭·인당 임계 경보) 테스트.
 
-기본 임계: 안전 ≤ 인당 20,000 / 경보 ≥ 인당 100,000 (그 사이 주의).
+기본 임계: 안전 < 5만 / 🟠주의 5만~10만(이슈) / 🔴경보 ≥ 10만(컴플레인).
 초과액(인당) = (우리2인 - 시장2인) / 2.
 """
 
@@ -19,22 +19,24 @@ class TestClassify(unittest.TestCase):
         self.assertEqual(a.surcharge_pp, -100_000)
         self.assertTrue(a.margin_review)     # 과하게 쌈 → 인상 검토(정보)
 
-    def test_slightly_pricier_tolerated_is_safe(self):
-        a = classify(1_040_000, 1_000_000)   # 인당 +20,000 (용인 상한)
+    def test_slightly_pricier_is_safe(self):
+        a = classify(1_080_000, 1_000_000)   # 인당 +40,000 (<5만)
         self.assertIs(a.level, AlertLevel.SAFE)
-        self.assertEqual(a.surcharge_pp, 20_000)
+        self.assertEqual(a.surcharge_pp, 40_000)
 
-    def test_just_over_tolerance_is_watch(self):
-        a = classify(1_040_002, 1_000_000)   # 인당 +20,001
-        self.assertIs(a.level, AlertLevel.WATCH)
+    def test_just_below_issue_is_safe(self):
+        a = classify(1_099_996, 1_000_000)   # 인당 +49,998 (<5만)
+        self.assertIs(a.level, AlertLevel.SAFE)
 
-    def test_watch_mid_band(self):
+    def test_issue_threshold_is_watch_orange(self):
+        # 5만원 이상 = 이슈(🟠 주의)
         a = classify(1_100_000, 1_000_000)   # 인당 +50,000
         self.assertIs(a.level, AlertLevel.WATCH)
-        self.assertIn("🟡 주의", a.label)
+        self.assertIn("🟠 주의", a.label)
 
-    def test_alarm_at_threshold(self):
-        a = classify(1_200_000, 1_000_000)   # 인당 +100,000 (경보 하한)
+    def test_complaint_threshold_is_alarm_red(self):
+        # 10만원 이상 = 컴플레인(🔴 경보)
+        a = classify(1_200_000, 1_000_000)   # 인당 +100,000
         self.assertIs(a.level, AlertLevel.ALARM)
         self.assertTrue(a.is_alarm)
         self.assertIn("🔴 경보", a.label)
