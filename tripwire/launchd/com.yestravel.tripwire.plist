@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  하루 2회(09:00 / 18:00 KST) 트립와이어 실행 launchd 잡.
+  설치:
+    cp tripwire/launchd/com.yestravel.tripwire.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.yestravel.tripwire.plist
+  자격증명은 EnvironmentVariables 에 채우거나(아래), 로그인 셸 프로파일에 export.
+  ★경로는 사용자 환경에 맞게(아래는 현재 repo 위치).
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.yestravel.tripwire</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/kimyongseong/Documents/claude_code/macau-fare-monitor/tripwire/run_tripwire.sh</string>
+  </array>
+
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>0</integer></dict>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TRAVELPAYOUTS_TOKEN</key><string></string>
+    <key>PUSHOVER_TOKEN</key><string></string>
+    <key>PUSHOVER_USER</key><string></string>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/Users/kimyongseong/Documents/claude_code/macau-fare-monitor/tripwire/tripwire.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/kimyongseong/Documents/claude_code/macau-fare-monitor/tripwire/tripwire.log</string>
+</dict>
+</plist>

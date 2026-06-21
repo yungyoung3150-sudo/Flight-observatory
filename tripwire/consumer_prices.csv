@@ -1,0 +1,3 @@
+sku_id,depart_date,source,consumer_pp,observed_at,note
+nx_icn_mfm_2n3d,2026-07-18,travelpayouts,590000,2026-06-21T09:00:00,데모: 정상(우리와 근소차)
+nx_icn_mfm_2n3d,2026-07-25,naver_human,300000,2026-06-21T09:05:00,데모: Trip.com 덤핑 시나리오(인당 30만 빠짐)

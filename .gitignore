@@ -12,6 +12,9 @@ venv/
 reports/*.md
 reports/*.csv
 
+# tripwire 런타임 로그(자격증명/가격 흔적 — 커밋 금지)
+tripwire/tripwire.log
+
 # OS / 에디터
 .DS_Store
 .idea/

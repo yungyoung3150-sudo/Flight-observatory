@@ -1,0 +1,44 @@
+{
+  "_doc": "감시 SKU 카탈로그. 타깃 = '모든 결제 수단' 소비자 최저가. 두 소스(메타서치 API / 네이버 사람판독)가 이 SKU 정의로 동작.",
+  "anger_threshold_pp": 100000,
+  "tolerance_pp": 20000,
+  "_verify": "★our_price_pp(우리 공구가 인당)·depart_dates 는 placeholder — 실제 공구 SKU로 교체. ★BX 박수→귀국 오프셋(2박4일=+3,3박5일=+4)은 메모리값, 실일정으로 1회 검증.",
+  "skus": [
+    {
+      "id": "nx_icn_mfm_2n3d",
+      "carrier": "NX", "carrier_name": "에어마카오",
+      "origin": "ICN", "dest": "MFM",
+      "stay": "2박3일", "return_offset_days": 2,
+      "flight_hint": "NX825 out / NX826 ret · 에어마카오만 · 모든 결제 수단 최저가",
+      "our_price_pp": 600000,
+      "depart_dates": ["2026-07-18", "2026-07-19", "2026-07-25"]
+    },
+    {
+      "id": "nx_icn_mfm_3n4d",
+      "carrier": "NX", "carrier_name": "에어마카오",
+      "origin": "ICN", "dest": "MFM",
+      "stay": "3박4일", "return_offset_days": 3,
+      "flight_hint": "NX821 out14:15 / NX822 ret08:35 · 에어마카오만 · 모든 결제 수단",
+      "our_price_pp": 620000,
+      "depart_dates": ["2026-07-18", "2026-07-19"]
+    },
+    {
+      "id": "bx_pus_mfm_2n4d",
+      "carrier": "BX", "carrier_name": "에어부산",
+      "origin": "PUS", "dest": "MFM",
+      "stay": "2박4일", "return_offset_days": 3,
+      "flight_hint": "에어부산만 · 모든 결제 수단 · ★박수/오프셋 검증 · 700k 덤핑 레그",
+      "our_price_pp": 470000,
+      "depart_dates": ["2026-07-18", "2026-07-25"]
+    },
+    {
+      "id": "bx_pus_mfm_3n5d",
+      "carrier": "BX", "carrier_name": "에어부산",
+      "origin": "PUS", "dest": "MFM",
+      "stay": "3박5일", "return_offset_days": 4,
+      "flight_hint": "에어부산만 · 모든 결제 수단 · ★박수/오프셋 검증 · 700k 덤핑 레그",
+      "our_price_pp": 520000,
+      "depart_dates": ["2026-07-18"]
+    }
+  ]
+}
