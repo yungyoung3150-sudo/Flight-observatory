@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "macau-fare-monitor"
+version = "0.1.0"
+description = "예스트래블 마카오 공동구매 항공권 요금 방어 모니터링 코어 로직"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []  # 표준 라이브러리만 사용
+
+[tool.setuptools.packages.find]
+where = ["src"]
