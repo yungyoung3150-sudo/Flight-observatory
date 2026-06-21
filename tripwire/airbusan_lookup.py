@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import csv
 import sys
 from datetime import date, datetime, timedelta
@@ -43,6 +44,20 @@ def itinerary(dep: date):
     return None, None
 
 
+# 검증된 PUS-MFM 왕복 tfs 템플릿(7/24→7/27). 날짜 문자열은 protobuf에 ASCII로 박혀 있어,
+# 동일 길이(YYYY-MM-DD)로 바이트 치환하면 임의 날짜의 구글 항공 검색 URL을 결정적으로 생성한다.
+_TFS = ("CBwQAhoeEgoyMDI2LTA3LTI0agcIARIDUFVTcgcIARIDTUZNGh4SCjIwMjYt"
+        "MDctMjdqBwgBEgNNRk1yBwgBEgNQVVNAAUgBcAGCAQsI____________AZgBAQ")
+_RAW = base64.urlsafe_b64decode(_TFS + "=" * (-len(_TFS) % 4))
+
+
+def google_url(dep: date, ret: date) -> str:
+    b = (_RAW.replace(b"2026-07-24", dep.isoformat().encode())
+             .replace(b"2026-07-27", ret.isoformat().encode()))
+    return ("https://www.google.com/travel/flights/search?tfs="
+            + base64.urlsafe_b64encode(b).decode().rstrip("="))
+
+
 def cmd_plan(depart_dates):
     print("=== 에어부산 구글 검색 일정(BX381/382) — 부산(PUS)→마카오(MFM) ===\n")
     for ds in depart_dates:
@@ -52,7 +67,8 @@ def cmd_plan(depart_dates):
             print(f"  {ds}({WD_KR[dep.weekday()]}): 에어부산 미운항 요일 — 건너뜀")
             continue
         print(f"  {ds}({WD_KR[dep.weekday()]}) {stay}: 출발 {ds} → 귀국 {ret.isoformat()}"
-              f"({WD_KR[ret.weekday()]})  [구글: PUS→MFM 왕복, 에어부산 직항가 읽기]")
+              f"({WD_KR[ret.weekday()]})")
+        print(f"     {google_url(dep, ret)}")
 
 
 def cmd_eval(path: Path):
