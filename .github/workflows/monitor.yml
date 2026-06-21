@@ -1,13 +1,15 @@
-name: Monitor (scheduled scaffold)
+name: Monitor (하루 2회 가드레일)
 
-# ⚠️ 현재는 '스캐폴드'다. 고정 스냅샷(data/fares.csv)을 읽으므로 매일 같은 리포트가 나온다.
-# 진짜 백그라운드 감시가 되려면 아래 'Collect' 단계에서 가격 수집 파이프
-# (Amadeus/Duffel + 소비자 OTA 채널가)로 data/fares.csv 를 갱신해야 한다. (README §7)
-# 🔴 경보가 뜨면 알림(Pushover 등)을 붙이는 것도 그다음 단계.
+# 하루 2회(오전/오후) 수집 → 가드레일 리포트 생성.
+# ⚠️ 현재 'collect' 단계는 --source demo 라 실제 시세를 안 가져온다(데이터 불변).
+#    진짜 갱신이 되려면 scripts/collect.py 의 AmadeusSource(또는 소비자 OTA 채널)를
+#    구현하고 --source 를 바꿔야 한다. (자격증명은 GitHub Secrets 로 주입; README §7)
+#    🔴 경보 시 알림(Pushover 등)도 그다음에 붙인다.
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # 매일 00:00 UTC = 09:00 KST
+    - cron: '0 0 * * *'   # 00:00 UTC = 09:00 KST (오전)
+    - cron: '0 9 * * *'   # 09:00 UTC = 18:00 KST (오후)
   workflow_dispatch:       # 수동 실행 버튼
 
 jobs:
@@ -19,10 +21,12 @@ jobs:
         with:
           python-version: '3.11'
 
-      # TODO(데이터 피드): 여기서 실시간 시세를 수집해 data/fares.csv 를 갱신.
-      #   - name: Collect live fares
-      #     env: { AMADEUS_KEY: ${{ secrets.AMADEUS_KEY }} }
-      #     run: python scripts/collect.py --out data/fares.csv
+      - name: Collect fares (현재 demo)
+        # 실데이터 연결 시: --source amadeus + env 로 AMADEUS_CLIENT_ID/SECRET 주입
+        # env:
+        #   AMADEUS_CLIENT_ID: ${{ secrets.AMADEUS_CLIENT_ID }}
+        #   AMADEUS_CLIENT_SECRET: ${{ secrets.AMADEUS_CLIENT_SECRET }}
+        run: python scripts/collect.py --source demo
 
       - name: Build guardrail report
         run: python scripts/build_report.py --out reports   # --as-of 기본값 = 실행일(오늘)

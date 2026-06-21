@@ -43,13 +43,16 @@ def load_fares(path: Path = DEFAULT_FARES_CSV,
     with open(path, newline="", encoding="utf-8") as fh:
         for raw in csv.DictReader(fh):
             note = (raw.get("note") or "").strip()
+            # collected_on 컬럼이 있으면 행별 수집일 사용(수집기가 채움), 없으면 기본값.
+            raw_collected = (raw.get("collected_on") or "").strip()
+            row_collected = _parse_date(raw_collected) if raw_collected else collected_on
             rows.append(
                 FareRow(
                     product=Product(raw["product"].strip()),
                     depart_date=_parse_date(raw["depart_date"]),
                     our_price_2p=_parse_int(raw.get("our_price_2p")),
                     market_low_2p=_parse_int(raw.get("market_low_2p")),
-                    collected_on=collected_on,
+                    collected_on=row_collected,
                     note=note,
                     reference_only=_is_reference_only(note),
                 )
