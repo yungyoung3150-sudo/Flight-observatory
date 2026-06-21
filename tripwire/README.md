@@ -11,6 +11,25 @@
 봇은 가격을 **자동 수집(합법 API)** 하거나, **사람을 정확한 네이버 화면으로 데려다 놓는다.**
 판정은 기존 가드레일([../src/macau_fare_monitor/alert.py](../src/macau_fare_monitor/alert.py))을 재사용.
 
+## ★ 실제 데이터 소스 = 당신의 기존 시트 (확정)
+
+당신(팀)은 이미 **네이버 수집기**가 구글 시트에 시장최저를 매일 채우고 있다(수집일 갱신 확인).
+그러므로 봇이 네이버를 새로 긁을 필요가 없다 — **이미 수집된 시트만 읽어** 판정한다.
+
+```
+당신 네이버 수집기 ─→ 구글 시트(시장최저 vs 우리요금) ─→ 가드레일 ─→ 🟠/🔴 아이폰
+```
+
+두 가지 실행 방법:
+
+- **(권장) 시트 안 Apps Script** — [guardrail.gs](guardrail.gs). 시트에 붙여 하루 2회 자동 실행 →
+  외부 서버 0. 설정 3단계(붙여넣기 / 스크립트 속성에 PUSHOVER_TOKEN·USER / installTriggers 1회).
+- **Python** — [sheet_guardrail.py](sheet_guardrail.py). 시트에서 추출한 CSV(또는 시트 API)를 읽어 판정.
+  데모: `python3 tripwire/sheet_guardrail.py`(오늘자 [sheet_today.csv](sheet_today.csv) → 🟢/🟠/🔴).
+
+> 효과(오늘자 실데이터): 시트가 '방어실패(빨강)'로 칠한 구간도 **고객 기준(인당 5만/10만)으론
+> 대부분 🟢안전·🟠주의, 🔴 컴플레인급 0건.** 아이폰은 진짜 🔴일 때만 울린다.
+
 ## 두 트랙 (둘 다 코드, 공유 싱크 `consumer_prices.csv`)
 
 | | 트랙 A — 풀 자동 | 트랙 B — 네이버 사람판독 |
